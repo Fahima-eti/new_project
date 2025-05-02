@@ -1,13 +1,13 @@
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:new_project/ui/controllers/forgot_password_otp_controller.dart';
 import 'package:new_project/ui/screens/reset_password_screen.dart';
 import 'package:new_project/widget/centered_progress_circular_indicator.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 
 import '../../Widget/screen_background.dart';
-import '../../data/service/network_client.dart';
-import '../../data/utils/urls.dart';
 import '../../widget/snack_bar_message.dart';
 import '../login_screen.dart';
 
@@ -22,8 +22,8 @@ class ForgotPasswordVerifyPinEmailScreen extends StatefulWidget {
 class _ForgotPasswordVerifyPinEmailScreenState extends State<ForgotPasswordVerifyPinEmailScreen> {
   TextEditingController _PinController = TextEditingController();
   final GlobalKey<FormState>_formkey = GlobalKey<FormState>();
+final ForgotPasswordController _forgotPasswordController = Get.find<ForgotPasswordController>();
 
-  bool _passwordVerifyPinInProgress = false;
 
   String ? receivedEmail;
 
@@ -86,11 +86,15 @@ class _ForgotPasswordVerifyPinEmailScreenState extends State<ForgotPasswordVerif
                     SizedBox(height: 16,),
                     ElevatedButton(
                         onPressed: _onTapSubmitButton,
-                        child:Visibility(
-                            visible: _passwordVerifyPinInProgress == false,
-                            replacement: CenteredProgressCircularIndicator(),
+                        child:GetBuilder<ForgotPasswordController>(
+                          builder: (controller) {
+                            return Visibility(
+                                visible: controller.passwordVerifyPinInProgress == false,
+                                replacement: CenteredProgressCircularIndicator(),
 
-                            child: Text("Verify"))),
+                                child: Text("Verify"));
+                          }
+                        )),
                     SizedBox(height: 32,),
                     Center(
                       child: RichText(text: TextSpan(
@@ -122,37 +126,29 @@ class _ForgotPasswordVerifyPinEmailScreenState extends State<ForgotPasswordVerif
     }
   }
 
-  Future<void>_passwordPinVerify() async {
-    _passwordVerifyPinInProgress = true;
-    setState(() {});
-
+  Future<void> _passwordPinVerify() async {
     final String pin = _PinController.text;
 
-    NetworkResponse response = await NetworkClient.getRequest(url:
-    Urls.forgetPasswordEmailAndPinVerifyUrl(
-        email : receivedEmail, otp : pin));
+    final bool isSuccess = await _forgotPasswordController.passwordPinVerify(
+      receivedEmail: receivedEmail!,
+      pin: pin,
+    );
 
-    if(response.isSuccess){
-      Navigator.pushAndRemoveUntil(context,
-          MaterialPageRoute(builder:
-              (context) => ResetPasswordScreen()),
-              (predicate)=>false);
-    }else{
-      _passwordVerifyPinInProgress = false;
-      setState(() {});
-      showSnackBarMessage(context,
-          "invalid Otp!please enter a valid otp",true);
+    if (isSuccess) {
+      Get.offAll(ResetPasswordScreen(),predicate: (_) => false);
+
+    } else {
+      showSnackBarMessage(
+        context,
+        _forgotPasswordController.errorMessage ?? "Invalid OTP! Please enter a valid OTP",
+        true,
+      );
     }
   }
 
-  void _onTapSignUpButton(){
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder:
-          (context)=> const LoginScreen()),
-          (pre)=>false,
-    );
 
+  void _onTapSignUpButton(){
+    Get.offAll(LoginScreen(),predicate: (_) => false);
   }
   @override
   void dispose() {

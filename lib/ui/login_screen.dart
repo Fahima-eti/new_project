@@ -1,18 +1,17 @@
-import 'dart:convert';
 
 import 'package:email_validator/email_validator.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:new_project/data/models/login_models.dart';
-import 'package:new_project/ui/controllers/auth_controller.dart';
+import 'package:get/get.dart';
+import 'package:get/get_core/src/get_main.dart';
+import 'package:new_project/ui/controllers/login_controller.dart';
 import 'package:new_project/ui/screens/forgot_password_verify_email_screen.dart';
 import 'package:new_project/ui/screens/main_bottom_nav_screen.dart';
 import 'package:new_project/ui/screens/register_screen.dart';
 import 'package:new_project/widget/centered_progress_circular_indicator.dart';
 
 import '../../Widget/screen_background.dart';
-import '../data/service/network_client.dart';
-import '../data/utils/urls.dart';
+
 import '../widget/snack_bar_message.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -26,8 +25,7 @@ class _LoginScreenState extends State<LoginScreen> {
   TextEditingController _EController = TextEditingController();
   TextEditingController _PController = TextEditingController();
   final GlobalKey<FormState>_formkey = GlobalKey<FormState>();
-  bool _loginInProgress = false;
-
+   final LoginController _loginController = Get.find<LoginController>();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -75,12 +73,16 @@ class _LoginScreenState extends State<LoginScreen> {
                       },
                     ),
                     SizedBox(height: 16,),
-                    Visibility(
-                      visible: _loginInProgress == false,
-                      replacement:const CenteredProgressCircularIndicator(),
-                      child: ElevatedButton(
-                          onPressed: _onTapSignInButton,
-                          child:Icon(Icons.arrow_circle_right_outlined,size: 20,)),
+                    GetBuilder<LoginController>(
+                      builder: (controller) {
+                        return Visibility(
+                          visible: controller.loginInProgress == false,
+                          replacement:const CenteredProgressCircularIndicator(),
+                          child: ElevatedButton(
+                              onPressed: _onTapSignInButton,
+                              child:Icon(Icons.arrow_circle_right_outlined,size: 20,)),
+                        );
+                      }
                     ),
                     SizedBox(height: 32,),
                     Center(
@@ -119,46 +121,24 @@ if(_formkey.currentState!.validate()){
   }
 
   Future<void> _login () async {
-    _loginInProgress = true;
-    setState(() {});
-    Map<String, dynamic> requestBody = {
-      "email": _EController.text.trim(),
-      "password": _PController.text,
-    };
-
-    NetworkResponse response = await NetworkClient.postRequest
-      (url: Urls.loginUrl,body: requestBody);
-
-    _loginInProgress = false;
-    setState(() {});
-
-    if(response.isSuccess){
-LoginModel loginModel = LoginModel.fromJson(response.data!);
-AuthController.saveUserInformation(loginModel.token, loginModel.userModel);
-
-          Navigator.pushAndRemoveUntil(context,
-              MaterialPageRoute(builder:
-                  (context)=>MainBottomNavScreen()),
-                  (predicate)=>false
+     final bool isSuccess = await _loginController.login(
+         _EController.text.trim(),
+         _PController.text.trim());
+    if(isSuccess){
+      Get.offAll(MainBottomNavScreen(),predicate: (_)=>false
       );
     }else{
+showSnackBarMessage(context,_loginController.errorMessage!,true);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        showSnackBarMessage(context,response.errorMessage,true),
-      );
     }
   }
 
   void _onTapSignUpButton(){
-    Navigator.push(context,
-        MaterialPageRoute(builder:
-            (context)=>RegisterScreen()));
+    Get.to(RegisterScreen());
   }
 
   void _onTapForgotPasswordButton(){
-    Navigator.push(context,
-        MaterialPageRoute(builder:
-            (context)=>ForgotPasswordVerifyEmailScreen()));
+    Get.to(ForgotPasswordVerifyEmailScreen());
   }
   @override
   void dispose() {

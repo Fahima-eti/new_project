@@ -1,11 +1,11 @@
 import 'package:email_validator/email_validator.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:new_project/data/service/network_client.dart';
+import 'package:get/get.dart';
+import 'package:new_project/ui/controllers/register_controller.dart';
 import 'package:new_project/widget/centered_progress_circular_indicator.dart';
 
 import '../../Widget/screen_background.dart';
-import '../../data/utils/urls.dart';
 import '../../widget/snack_bar_message.dart';
 
 
@@ -24,7 +24,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _MController = TextEditingController();
   final TextEditingController _PController = TextEditingController();
   final GlobalKey<FormState>_formkey = GlobalKey<FormState>();
-bool _regisTrationInProgress = false;
+  final RegisterController _registerController = Get.find<RegisterController>();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -122,13 +123,17 @@ bool _regisTrationInProgress = false;
                         },
                       ),
                       SizedBox(height: 16,),
-                      Visibility(
-                          visible: _regisTrationInProgress == false,
-                          replacement:const CenteredProgressCircularIndicator(),
+                      GetBuilder<RegisterController>(
+                        builder: (controller) {
+                          return Visibility(
+                              visible:controller.registrationInProgress == false,
+                              replacement:const CenteredProgressCircularIndicator(),
 
-                        child: ElevatedButton(
-                          onPressed: _onTapSubmitButton,
-                          child:Icon(Icons.arrow_circle_right_outlined,size: 20,)),),
+                            child: ElevatedButton(
+                              onPressed: _onTapSubmitButton,
+                              child:Icon(Icons.arrow_circle_right_outlined,size: 20,)),);
+                        }
+                      ),
                       SizedBox(height: 32,),
                       Center(
                         child: RichText(text: TextSpan(
@@ -164,34 +169,23 @@ bool _regisTrationInProgress = false;
   }
 
   Future<void> _registerUser () async {
-    _regisTrationInProgress = true;
-    setState(() {});
-    Map<String, String> requestBody = {
-      "email": _EController.text.trim(),
-      "firstName": _FController.text.trim(),
-      "lastName": _LController.text.trim(),
-      "mobile": _MController.text.trim(),
-      "password": _PController.text,
-    };
+  final bool isSuccess = await _registerController.registerUser(_EController.text.trim(),
+      _FController.text.trim(),
+    _LController.text.trim(),
+    _MController.text.trim(),
+    _PController.text,
+  );
 
-NetworkResponse response = await NetworkClient.postRequest
-  (url: Urls.registerUrl,body: requestBody);
-
-    _regisTrationInProgress = false;
-    setState(() {});
-
-    if(response.isSuccess){
+  if(isSuccess){
       _clearTextField();
 ScaffoldMessenger.of(context).showSnackBar(
   showSnackBarMessage(context,"User registration successfully")
 );
     }else{
-
-ScaffoldMessenger.of(context).showSnackBar(
-   showSnackBarMessage(context,response.errorMessage,true),
-);
-    }
+    showSnackBarMessage(context,_registerController.errorMessage!,true);
   }
+   }
+
   void _clearTextField(){
 
     _FController.clear();
@@ -199,8 +193,6 @@ ScaffoldMessenger.of(context).showSnackBar(
     _MController.clear();
     _LController.clear();
     _EController.clear();
-
-
   }
 
   void _onTapSignInButton(){

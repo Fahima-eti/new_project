@@ -3,7 +3,6 @@ import 'package:new_project/ui/screens/cancelled_task_screen.dart';
 import 'package:new_project/ui/screens/completed_task_screen.dart';
 import 'package:new_project/ui/screens/new_task_screen.dart';
 import 'package:new_project/ui/screens/progress_task_screen.dart';
-
 import '../../Widget/tm_app_bar.dart';
 
 class MainBottomNavScreen extends StatefulWidget {
@@ -33,7 +32,9 @@ class _MainBottomNavScreenState extends State<MainBottomNavScreen> {
           selectedIndex: _selectedindex,
           onDestinationSelected: (index){
             _selectedindex = index;
-            setState(() {});
+            setState(() {
+
+            });
           },
 
           destinations:const [

@@ -2,15 +2,14 @@ import 'dart:convert';
 
 import 'package:email_validator/email_validator.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:new_project/Widget/tm_app_bar.dart';
 import 'package:new_project/data/models/user_model.dart';
 import 'package:new_project/ui/controllers/auth_controller.dart';
-import 'package:new_project/ui/login_screen.dart';
+import 'package:new_project/ui/controllers/update_profile_controller.dart';
 import 'package:new_project/widget/centered_progress_circular_indicator.dart';
 
-import '../../data/service/network_client.dart';
-import '../../data/utils/urls.dart';
 import '../../widget/snack_bar_message.dart';
 
 class UpdateProfileScreen extends StatefulWidget {
@@ -32,7 +31,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
   final ImagePicker _imagePicker = ImagePicker();
   XFile ? _pickedImage;
 
-  bool _updateProfileInProgress = false;
+ final UpdateProfileController _updateProfileController = Get.find<UpdateProfileController>();
 
   @override
   void initState() {
@@ -150,12 +149,16 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
                 ),
               ),
               SizedBox(height: 16,),
-              Visibility(
-                visible: _updateProfileInProgress == false,
-                replacement: CenteredProgressCircularIndicator(),
-                child: ElevatedButton(
-                    onPressed: _onTapSubmitButton,
-                    child: Icon(Icons.arrow_circle_right_outlined, size: 20,)),
+              GetBuilder<UpdateProfileController>(
+                builder: (controller) {
+                  return Visibility(
+                    visible:controller.updateProfileInProgress == false,
+                    replacement: CenteredProgressCircularIndicator(),
+                    child: ElevatedButton(
+                        onPressed: _onTapSubmitButton,
+                        child: Icon(Icons.arrow_circle_right_outlined, size: 20,)),
+                  );
+                }
               ),
             ],
           ),
@@ -171,39 +174,29 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
   }
 
   Future<void> _updateProfile() async {
-    _updateProfileInProgress = true;
-    setState(() {});
-    Map<String, String> requestBody = {
-      "email": _EController.text.trim(),
-      "firstName": _FController.text.trim(),
-      "lastName": _LController.text.trim(),
-      "mobile": _MController.text.trim(),
-    };
-    if (_PController.text.isNotEmpty) {
-      requestBody ["password"] = _PController.text;
-    }
+    String ? encodedImage;
+
+    final bool isSuccess = await _updateProfileController.updateProfile(
+        _EController.text.trim(),
+        _FController.text.trim(),
+        _LController.text.trim(),
+        _MController.text.trim(),
+      password: _PController.text.trim().isNotEmpty ? _PController.text.trim() : null,
+      photo: encodedImage,
+    );
     if(_pickedImage != null){
       List<int> imageBytes = await _pickedImage!.readAsBytes();
       String encodedImage = base64Encode(imageBytes);
-      requestBody ["photo"] = encodedImage;
     }
 
-    NetworkResponse response = await NetworkClient.postRequest
-      (url: Urls.updateProfileUrl, body: requestBody);
-
-    _updateProfileInProgress = false;
-    setState(() {});
-
-    if (response.isSuccess) {
+    if (isSuccess) {
       _PController.clear();
 
       ScaffoldMessenger.of(context).showSnackBar(
           showSnackBarMessage(context, "User data updated successfully")
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        showSnackBarMessage(context, response.errorMessage, true),
-      );
+      showSnackBarMessage(context,_updateProfileController.errorMessage!,true);
     }
   }
 
@@ -242,7 +235,6 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
     XFile ? image = await _imagePicker.pickImage(source: ImageSource.gallery);
     if (image != null) {
       _pickedImage = image;
-      setState(() {});
     }
   }
 }
