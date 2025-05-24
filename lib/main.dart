@@ -1,10 +1,19 @@
 import 'package:flutter/material.dart';
 
-import 'app.dart';
+import 'google_map_with_geolocator.dart';
 
 
 void main(){
-  runApp(
-      TaskManagerApp()
-  );
+  runApp(const GoogleMapsApp() );
+}
+
+class GoogleMapsApp extends StatelessWidget {
+  const GoogleMapsApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: GoogleMapWithGeolocator(),
+    );
+  }
 }
