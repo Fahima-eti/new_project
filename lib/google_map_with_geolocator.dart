@@ -45,7 +45,9 @@ _getCurrentLocation();
             markerId:
             MarkerId("My Location"),
           position: latLng,
-          infoWindow: InfoWindow(title: "My Current Location"),
+          infoWindow: InfoWindow(title:
+          "My Current Location,${latLng}"
+          ),
         );
         _polyline.add(latLng);
         print("Polyline length: ${_polyline.length}");
@@ -57,7 +59,6 @@ _getCurrentLocation();
     });
   }
   @override
-
   void dispose(){
   _locationSubscription?.cancel();
     super.dispose();
