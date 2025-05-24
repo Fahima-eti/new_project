@@ -57,6 +57,7 @@ _getCurrentLocation();
     });
   }
   @override
+
   void dispose(){
   _locationSubscription?.cancel();
     super.dispose();
